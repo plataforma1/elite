@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Elite · Raspa y Gana</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:      #0E0618;
+  --bg2:     #180A28;
+  --card-bg: #2A1250;
+  --purple:  #3D1A72;
+  --gold:    #D4AF37;
+  --gold-lt: #F5D060;
+  --gold-dim:#7A6018;
+  --text:    #FBF3DC;
+  --muted:   #A888CC;
+  --wa:      #25D366;
+}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Lato',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden;}
+body{display:flex;flex-direction:column;align-items:center;}
+
+/* BG */
+#bg-canvas{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;}
+.sym{position:absolute;opacity:0;animation:rise var(--dur) var(--delay) infinite ease-in-out;user-select:none;font-size:20px;}
+@keyframes rise{0%{transform:translateY(105vh) rotate(0deg);opacity:0;}12%{opacity:.12;}85%{opacity:.07;}100%{transform:translateY(-100px) rotate(360deg);opacity:0;}}
+#vignette{position:fixed;inset:0;pointer-events:none;z-index:1;background:radial-gradient(ellipse at center,transparent 20%,rgba(14,6,24,.55) 65%,rgba(14,6,24,.95) 100%);}
+#diam{position:fixed;inset:0;pointer-events:none;z-index:1;background-image:repeating-linear-gradient(45deg,rgba(180,100,255,.04) 0,rgba(180,100,255,.04) 1px,transparent 1px,transparent 28px),repeating-linear-gradient(-45deg,rgba(180,100,255,.04) 0,rgba(180,100,255,.04) 1px,transparent 1px,transparent 28px);}
+
+/* LAYOUT */
+.page{position:relative;z-index:10;width:100%;max-width:420px;padding:24px 16px 40px;display:flex;flex-direction:column;align-items:center;}
+
+/* LOGO */
+.logo-top{text-align:center;margin-bottom:6px;}
+.logo-gem{font-size:24px;display:block;filter:drop-shadow(0 0 8px rgba(212,175,55,.5));}
+.logo-name{font-family:'Playfair Display',serif;font-size:36px;font-weight:900;letter-spacing:8px;color:var(--text);}
+.logo-sub{font-size:9px;font-weight:300;letter-spacing:6px;color:var(--muted);text-transform:uppercase;margin-top:3px;}
+.orn{display:flex;align-items:center;gap:8px;justify-content:center;margin:8px 0 0;}
+.orn-line{flex:1;max-width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);}
+.orn span{font-size:7px;color:var(--gold);letter-spacing:3px;}
+
+/* TITLE */
+.game-title{
+  font-family:'Playfair Display',serif;
+  font-size:28px;font-weight:900;
+  color:var(--gold-lt);text-align:center;
+  letter-spacing:3px;text-transform:uppercase;
+  margin:18px 0 4px;
+  text-shadow:0 0 20px rgba(212,175,55,.3);
+}
+.game-sub{font-size:11px;font-weight:700;letter-spacing:2.5px;color:var(--muted);text-transform:uppercase;text-align:center;margin-bottom:20px;}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:16px;}
+
+.card-wrap{position:relative;border-radius:6px;overflow:hidden;aspect-ratio:1;cursor:pointer;user-select:none;-webkit-user-select:none;}
+
+.card-hidden{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:var(--card-bg);
+  border:1px solid rgba(212,175,55,.18);
+  border-radius:6px;
+}
+.card-hidden .prize-pct{
+  font-family:'Playfair Display',serif;
+  font-size:22px;font-weight:900;
+  color:var(--gold-lt);
+  text-shadow:0 0 12px rgba(212,175,55,.5);
+  line-height:1.1;
+  text-align:center;
+}
+.card-hidden .prize-lbl{font-size:8px;font-weight:700;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase;margin-top:3px;text-align:center;}
+.card-hidden .no-prize-icon{font-size:28px;opacity:.5;}
+.card-hidden .no-prize-txt{font-size:8px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-top:4px;}
+
+canvas.scratch{
+  position:absolute;inset:0;
+  border-radius:6px;
+  cursor:crosshair;
+  touch-action:none;
+}
+
+.card-wrap.revealed canvas.scratch{display:none;}
+.card-wrap.revealed .card-hidden{border-color:rgba(212,175,55,.35);}
+
+/* HINT */
+.hint{font-size:11px;color:var(--muted);letter-spacing:1.5px;text-align:center;margin-bottom:20px;animation:bob 2s ease infinite;}
+@keyframes bob{0%,100%{transform:translateY(0);}50%{transform:translateY(-4px);}}
+
+/* ALREADY PLAYED */
+#screen-played{display:none;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:40px 20px;}
+#screen-played .big-icon{font-size:60px;}
+#screen-played h2{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--gold);}
+#screen-played p{font-size:13px;color:var(--muted);line-height:1.6;max-width:280px;}
+
+/* WIN OVERLAY */
+#win-overlay{
+  display:none;
+  position:fixed;inset:0;z-index:200;
+  background:rgba(14,6,24,.97);
+  flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:30px 20px 40px;
+  overflow-y:auto;
+}
+#win-overlay.show{display:flex;}
+
+.win-badge{
+  width:90px;height:90px;border-radius:50%;
+  background:radial-gradient(circle at 38% 30%,#3D1A72,#0E0618);
+  border:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:center;
+  font-size:40px;
+  box-shadow:0 0 40px rgba(212,175,55,.35);
+  margin-bottom:16px;
+  animation:popIn .5s cubic-bezier(.17,.67,.35,1.3) both;
+}
+@keyframes popIn{from{transform:scale(0);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+.win-label{
+  font-size:11px;font-weight:700;letter-spacing:3px;
+  color:var(--gold);text-transform:uppercase;
+  margin-bottom:8px;
+}
+.win-prize{
+  font-family:'Playfair Display',serif;
+  font-size:64px;font-weight:900;
+  color:var(--gold-lt);line-height:1;
+  text-shadow:0 0 40px rgba(212,175,55,.4);
+  margin-bottom:4px;
+  animation:popIn .6s .15s cubic-bezier(.17,.67,.35,1.3) both;
+}
+.win-prize-sub{
+  font-family:'Playfair Display',serif;
+  font-size:18px;font-weight:700;
+  color:var(--gold);margin-bottom:24px;letter-spacing:1px;
+}
+.win-divider{width:120px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin-bottom:20px;}
+
+.win-capture{
+  font-size:13px;font-weight:900;
+  letter-spacing:2px;color:var(--text);
+  text-transform:uppercase;text-align:center;
+  line-height:1.5;max-width:300px;
+  background:rgba(212,175,55,.1);
+  border:1px solid rgba(212,175,55,.25);
+  border-radius:4px;padding:14px 18px;
+  margin-bottom:24px;
+}
+.win-capture span{color:var(--gold-lt);}
+
+/* WA BUTTONS */
+.wa-list{width:100%;max-width:360px;display:flex;flex-direction:column;gap:9px;margin-bottom:12px;}
+.wa-btn{
+  display:flex;align-items:center;gap:12px;
+  background:rgba(37,211,102,.1);
+  border:1px solid rgba(37,211,102,.25);
+  border-radius:3px;padding:12px 15px;
+  text-decoration:none;color:var(--text);
+  transition:background .2s,transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.wa-btn:active{background:rgba(37,211,102,.18);transform:scale(0.98);}
+.wa-icon{width:34px;height:34px;background:var(--wa);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.wa-icon svg{width:18px;height:18px;fill:#fff;}
+.wa-info{flex:1;}
+.wa-tag{font-size:9px;font-weight:700;letter-spacing:2px;color:#4ade80;text-transform:uppercase;margin-bottom:1px;}
+.wa-num{font-size:13px;font-weight:400;}
+
+.webchat-btn{
+  width:100%;max-width:360px;
+  background:transparent;
+  border:1px solid var(--gold-dim);border-radius:3px;
+  padding:15px;color:var(--gold);
+  font-family:'Lato',sans-serif;font-weight:700;
+  font-size:12px;letter-spacing:3px;text-transform:uppercase;
+  cursor:pointer;margin-top:4px;
+  transition:background .2s,transform .15s;
+  -webkit-tap-highlight-color:transparent;
+}
+.webchat-btn:active{background:rgba(212,175,55,.07);transform:scale(0.98);}
+
+/* CONFETTI */
+.conf{position:fixed;pointer-events:none;z-index:199;font-size:20px;animation:fall var(--d) var(--dl) ease-in forwards;}
+@keyframes fall{0%{transform:translateY(-40px) rotate(0deg);opacity:1;}100%{transform:translateY(110vh) rotate(720deg);opacity:0;}}
+</style>
+</head>
+<body>
+
+<div id="bg-canvas"></div>
+<div id="diam"></div>
+<div id="vignette"></div>
+
+<!-- ══ ALREADY PLAYED ══ -->
+<div id="screen-played" class="page">
+  <div class="big-icon">🎴</div>
+  <h2>Ya participaste</h2>
+  <p style="color:var(--muted);font-size:13px;line-height:1.6;">Ya usaste tu raspe. Si ganaste un premio, mandá la captura a tu agente para habilitarlo.</p>
+  <div id="played-prize" style="display:none;margin-top:8px;text-align:center;">
+    <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--gold);text-transform:uppercase;margin-bottom:4px;">Tu premio:</div>
+    <div id="played-prize-txt" style="font-family:'Playfair Display',serif;font-size:36px;font-weight:900;color:var(--gold-lt);"></div>
+    <div style="font-size:13px;color:var(--gold);margin-top:2px;">en tu próxima recarga</div>
+  </div>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="page" id="screen-game">
+
+  <div class="logo-top">
+    <span class="logo-gem">💎</span>
+    <div class="logo-name">ELITE</div>
+    <div class="logo-sub">Mundo Wyn · Casino Online</div>
+    <div class="orn"><div class="orn-line"></div><span>✦ ✦ ✦</span><div class="orn-line"></div></div>
+  </div>
+
+  <div class="game-title">Raspa y Gana</div>
+  <div class="game-sub">Raspá los cuadros y encontrá tu premio</div>
+
+  <div class="grid" id="grid"></div>
+
+  <p class="hint">☝ Raspá con el dedo o el mouse</p>
+
+</div>
+
+<!-- ══ WIN OVERLAY ══ -->
+<div id="win-overlay">
+  <div class="win-badge">🏆</div>
+  <div class="win-label">¡Felicitaciones! Ganaste</div>
+  <div class="win-prize" id="win-pct">25%</div>
+  <div class="win-prize-sub">en tu próxima recarga</div>
+  <div class="win-divider"></div>
+  <div class="win-capture">
+    📸 MANDÁ UNA <span>CAPTURA</span> A TU AGENTE<br>DE TU PREMIO PARA <span>HABILITARLO</span>
+  </div>
+  <div class="wa-list">
+    <a class="wa-btn" href="https://wa.me/595991328842" target="_blank"><div class="wa-icon"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="wa-info"><div class="wa-tag">Línea VIP 1</div><div class="wa-num">+595 991 328 842</div></div></a>
+    <a class="wa-btn" href="https://wa.me/595992533774" target="_blank"><div class="wa-icon"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="wa-info"><div class="wa-tag">Línea VIP 2</div><div class="wa-num">+595 992 533 774</div></div></a>
+    <a class="wa-btn" href="https://wa.me/595992259101" target="_blank"><div class="wa-icon"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="wa-info"><div class="wa-tag">Línea VIP 3</div><div class="wa-num">+595 992 259 101</div></div></a>
+    <a class="wa-btn" href="https://wa.me/595991424911" target="_blank"><div class="wa-icon"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="wa-info"><div class="wa-tag">Línea VIP 4</div><div class="wa-num">+595 991 424 911</div></div></a>
+    <a class="wa-btn" href="https://wa.me/595992107326" target="_blank"><div class="wa-icon"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="wa-info"><div class="wa-tag">Línea VIP 5</div><div class="wa-num">+595 992 107 326</div></div></a>
+    <a class="wa-btn" href="https://wa.me/595992231192" target="_blank"><div class="wa-icon"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div><div class="wa-info"><div class="wa-tag">Línea VIP 6</div><div class="wa-num">+595 992 231 192</div></div></a>
+  </div>
+  <button class="webchat-btn" onclick="openWebchat()">💬 &nbsp; ABRIR WEBCHAT</button>
+</div>
+
+<!-- CALLBELL -->
+<script>
+if(!window.callbellSettings)window.callbellSettings={};
+window.callbellSettings["uuid"]="1af8b396-d873-4665-a2d4-2911f71fa6c6";
+window.callbellSettings["script_token"]="1joLhU3pobMNMjXZuunnr38c";
+</script>
+<script>
+(function(){var w=window,d=document,l=function(){var s=d.createElement('script');s.async=true;s.src='https://dash.callbell.eu/include/livechat/'+w.callbellSettings.script_token+'/'+w.callbellSettings.uuid+'.js';var x=d.getElementsByTagName('script')[0];x.parentNode.insertBefore(s,x);};w.addEventListener('load',l,false);})();
+</script>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const LS_KEY   = 'elite_raspa_v1';
+const PRIZES   = ['15%','20%','25%','30%'];
+const NO_SYMS  = ['♠','♥','♦','♣','🎲','🎰','🃏','💎'];
+const SCRATCH_R = 22; // brush radius
+const REVEAL_TH = 0.42; // 42% scratched = auto reveal
+
+// ─── STATE ────────────────────────────────────────────────
+let gameWon   = false;
+let prizeIdx  = -1; // which card has the prize
+let wonPrize  = '';
+const revealed = new Array(9).fill(false);
+
+// ─── INIT ─────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  buildBg();
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) {
+    showPlayed(JSON.parse(saved));
+    return;
+  }
+  buildGrid();
+});
+
+// ─── PLAYED SCREEN ────────────────────────────────────────
+function showPlayed(data) {
+  document.getElementById('screen-game').style.display = 'none';
+  const sp = document.getElementById('screen-played');
+  sp.style.display = 'flex';
+  if (data.prize) {
+    document.getElementById('played-prize').style.display = 'block';
+    document.getElementById('played-prize-txt').textContent = data.prize;
+  }
+}
+
+// ─── BUILD GRID ───────────────────────────────────────────
+function buildGrid() {
+  // pick prize position and value
+  prizeIdx = Math.floor(Math.random() * 9);
+  wonPrize = PRIZES[Math.floor(Math.random() * PRIZES.length)];
+
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (let i = 0; i < 9; i++) {
+    const hasPrize = (i === prizeIdx);
+
+    // outer wrap
+    const wrap = document.createElement('div');
+    wrap.className = 'card-wrap';
+    wrap.dataset.idx = i;
+
+    // hidden content (below canvas)
+    const hidden = document.createElement('div');
+    hidden.className = 'card-hidden';
+
+    if (hasPrize) {
+      hidden.innerHTML = `
+        <div class="prize-pct">${wonPrize}</div>
+        <div class="prize-lbl">en tu recarga</div>`;
+    } else {
+      const sym = NO_SYMS[Math.floor(Math.random() * NO_SYMS.length)];
+      hidden.innerHTML = `
+        <div class="no-prize-icon">${sym}</div>
+        <div class="no-prize-txt">Seguí raspando</div>`;
+    }
+
+    // canvas overlay
+    const canvas = document.createElement('canvas');
+    canvas.className = 'scratch';
+
+    wrap.appendChild(hidden);
+    wrap.appendChild(canvas);
+    grid.appendChild(wrap);
+
+    // init canvas after layout
+    requestAnimationFrame(() => initCard(wrap, canvas, hasPrize));
+  }
+}
+
+// ─── INIT SINGLE CARD ─────────────────────────────────────
+function initCard(wrap, canvas, hasPrize) {
+  const w = wrap.offsetWidth;
+  const h = wrap.offsetHeight;
+  canvas.width  = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext('2d');
+
+  // fill with gold-ish gradient
+  const g = ctx.createLinearGradient(0, 0, w, h);
+  g.addColorStop(0,   '#5B2D8E');
+  g.addColorStop(0.5, '#7C3FBE');
+  g.addColorStop(1,   '#4A1A78');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+
+  // draw gold pattern on top
+  ctx.fillStyle = 'rgba(212,175,55,0.18)';
+  for (let r = 0; r < h; r += 14) {
+    for (let c = 0; c < w; c += 14) {
+      if ((r + c) % 28 === 0) ctx.fillRect(c, r, 7, 7);
+    }
+  }
+
+  // draw ✦ watermark
+  ctx.font = 'bold 36px serif';
+  ctx.fillStyle = 'rgba(212,175,55,0.25)';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('✦', w/2, h/2);
+
+  // ── EVENTS ──
+  let drawing = false;
+  let totalPx = 0;
+  const trackedPx = new Set();
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.touches) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function scratch(x, y) {
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.beginPath();
+    ctx.arc(x, y, SCRATCH_R, 0, Math.PI * 2);
+    ctx.fill();
+
+    // sample pixels in brush area to count scratched
+    for (let dx = -SCRATCH_R; dx <= SCRATCH_R; dx += 4) {
+      for (let dy = -SCRATCH_R; dy <= SCRATCH_R; dy += 4) {
+        if (dx*dx + dy*dy <= SCRATCH_R*SCRATCH_R) {
+          const px = Math.round(x + dx);
+          const py = Math.round(y + dy);
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            trackedPx.add(px + ',' + py);
+          }
+        }
+      }
+    }
+
+    const ratio = trackedPx.size / ((w * h) / 16);
+    if (ratio >= REVEAL_TH) revealCard(wrap, canvas, hasPrize);
+  }
+
+  canvas.addEventListener('mousedown', e => { if (gameWon || revealed[+wrap.dataset.idx]) return; drawing = true; const p = getPos(e); scratch(p.x, p.y); });
+  canvas.addEventListener('mousemove', e => { if (!drawing || gameWon || revealed[+wrap.dataset.idx]) return; const p = getPos(e); scratch(p.x, p.y); });
+  canvas.addEventListener('mouseup',   () => drawing = false);
+  canvas.addEventListener('mouseleave',() => drawing = false);
+
+  canvas.addEventListener('touchstart', e => { e.preventDefault(); if (gameWon || revealed[+wrap.dataset.idx]) return; drawing = true; const p = getPos(e); scratch(p.x, p.y); }, {passive:false});
+  canvas.addEventListener('touchmove',  e => { e.preventDefault(); if (!drawing || gameWon || revealed[+wrap.dataset.idx]) return; const p = getPos(e); scratch(p.x, p.y); }, {passive:false});
+  canvas.addEventListener('touchend',   () => drawing = false);
+}
+
+// ─── REVEAL CARD ──────────────────────────────────────────
+function revealCard(wrap, canvas, hasPrize) {
+  const idx = +wrap.dataset.idx;
+  if (revealed[idx]) return;
+  revealed[idx] = true;
+  wrap.classList.add('revealed');
+
+  if (hasPrize) {
+    gameWon = true;
+    localStorage.setItem(LS_KEY, JSON.stringify({ prize: wonPrize, ts: Date.now() }));
+    setTimeout(() => showWin(), 500);
+  }
+}
+
+// ─── WIN SCREEN ───────────────────────────────────────────
+function showWin() {
+  document.getElementById('win-pct').textContent = wonPrize;
+  const ov = document.getElementById('win-overlay');
+  ov.classList.add('show');
+  launchConfetti();
+  // scroll to top of overlay
+  ov.scrollTop = 0;
+}
+
+// ─── CONFETTI ─────────────────────────────────────────────
+function launchConfetti() {
+  const icons = ['✦','💎','♠','♥','♦','♣','⭐','👑','🏆'];
+  for (let i = 0; i < 28; i++) {
+    const el = document.createElement('div');
+    el.className = 'conf';
+    el.textContent = icons[Math.floor(Math.random() * icons.length)];
+    el.style.cssText = `left:${Math.random()*100}vw;top:0;--d:${1.5+Math.random()*2}s;--dl:${Math.random()*1}s;`;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+
+// ─── WEBCHAT ──────────────────────────────────────────────
+function openWebchat() {
+  if (window.callbell && window.callbell.open) window.callbell.open();
+}
+
+// ─── BG SYMBOLS ───────────────────────────────────────────
+function buildBg() {
+  const syms = ['♠','♥','♦','♣','🎲','🃏','👑','💎','✦','⭐','🎰'];
+  const canvas = document.getElementById('bg-canvas');
+  for (let i = 0; i < 22; i++) {
+    const el = document.createElement('div');
+    el.className = 'sym';
+    el.textContent = syms[Math.floor(Math.random() * syms.length)];
+    el.style.cssText = `left:${Math.random()*100}vw;--dur:${10+Math.random()*14}s;--delay:${-Math.random()*18}s;font-size:${13+Math.random()*18}px;`;
+    canvas.appendChild(el);
+  }
+}
+</script>
+</body>
+</html>
